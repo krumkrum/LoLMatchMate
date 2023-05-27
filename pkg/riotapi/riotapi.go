@@ -121,8 +121,7 @@ func (api *RiotAPI) GetPlayerInfoByPUUID(puuid string) (*PlayerInfo, error) {
 // GetMatchHistoryByPUUID Функция GetMatchHistoryByPUUID получает историю матчей игрока по его PUUID
 func (api *RiotAPI) GetMatchHistoryByPUUID(puuid string) (MatchHistory, error) {
 
-	url := fmt.Sprintf("%s/lol/match/v5/matches/by-puuid/%s/ids", api.baseURL, puuid)
-
+	url := fmt.Sprintf("%s/lol/match/v5/matches/by-puuid/%s/ids?start=0&count=100", api.baseURL, puuid)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
