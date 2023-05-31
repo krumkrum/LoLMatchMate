@@ -1,6 +1,7 @@
 package riotapi
 
 import (
+	"LoLMatchMate/api/models"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,72 +25,9 @@ func NewRiotAPI(apiKey, baseURL string) *RiotAPI {
 
 type MatchHistory []string
 
-type PlayerInfo struct {
-	ID            string `json:"id"`
-	AccountID     string `json:"accountId"`
-	PUUID         string `json:"puuid"`
-	Name          string `json:"name"`
-	ProfileIconID int    `json:"profileIconId"`
-	RevisionDate  int64  `json:"revisionDate"`
-	SummonerLevel int    `json:"summonerLevel"`
-}
-
-type MatchInfo struct {
-	Metadata Metadata `json:"metadata"`
-	Info     Info     `json:"info"`
-}
-
-type Metadata struct {
-	DataVersion  string   `json:"dataVersion"`
-	MatchID      string   `json:"matchId"`
-	Participants []string `json:"participants"`
-}
-
-type Info struct {
-	GameCreation       int64  `json:"gameCreation"`
-	GameDuration       int    `json:"gameDuration"`
-	GameEndTimestamp   int64  `json:"gameEndTimestamp"`
-	GameID             int    `json:"gameId"`
-	GameMode           string `json:"gameMode"`
-	GameName           string `json:"gameName"`
-	GameStartTimestamp int64  `json:"gameStartTimestamp"`
-	GameType           string `json:"gameType"`
-	GameVersion        string `json:"gameVersion"`
-	MapID              int    `json:"mapId"`
-	PlatformID         string `json:"platformId"`
-	QueueID            int    `json:"queueId"`
-	Teams              []Team `json:"teams"`
-	TournamentCode     string `json:"tournamentCode"`
-}
-
-type Team struct {
-	Bans       []Ban          `json:"bans"`
-	Objectives TeamObjectives `json:"objectives"`
-	TeamID     int            `json:"teamId"`
-	Win        bool           `json:"win"`
-}
-
-type Ban struct {
-	// Определение полей для запрещений
-}
-
-type TeamObjectives struct {
-	Baron      Objective `json:"baron"`
-	Champion   Objective `json:"champion"`
-	Dragon     Objective `json:"dragon"`
-	Inhibitor  Objective `json:"inhibitor"`
-	RiftHerald Objective `json:"riftHerald"`
-	Tower      Objective `json:"tower"`
-}
-
-type Objective struct {
-	First bool `json:"first"`
-	Kills int  `json:"kills"`
-}
-
 // GetPlayerInfoByPUUID Получить информацию об игроке по его PUUID
-func (api *RiotAPI) GetPlayerInfoByPUUID(puuid string) (*PlayerInfo, error) {
-	url := fmt.Sprintf("%s/lol/summoner/v4/summoners/by-puuid/%s?api_key=%s", api.baseURL, puuid, api.apiKey)
+func (api *RiotAPI) GetPlayerInfoByPUUID(playerID string) (*models.PlayerInfo, error) {
+	url := fmt.Sprintf("%s/lol/summoner/v4/summoners/by-puuid/%s?api_key=%s", api.baseURL, playerID, api.apiKey)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -102,14 +40,19 @@ func (api *RiotAPI) GetPlayerInfoByPUUID(puuid string) (*PlayerInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	var playerInfo PlayerInfo
+	var playerInfo models.PlayerInfo
 	err = json.Unmarshal(body, &playerInfo)
 	if err != nil {
 		return nil, err
@@ -118,10 +61,26 @@ func (api *RiotAPI) GetPlayerInfoByPUUID(puuid string) (*PlayerInfo, error) {
 	return &playerInfo, nil
 }
 
+func (api *RiotAPI) GetPlayersInfoByPUUID(playerIDs []string) ([]*models.PlayerInfo, error) {
+
+	var playersInfo []*models.PlayerInfo
+
+	for _, playerID := range playerIDs {
+		playerInfo, err := api.GetPlayerInfoByPUUID(playerID)
+		if err != nil {
+			return nil, err
+		}
+		playersInfo = append(playersInfo, playerInfo)
+
+	}
+
+	return playersInfo, nil
+}
+
 // GetMatchHistoryByPUUID Функция GetMatchHistoryByPUUID получает историю матчей игрока по его PUUID
 func (api *RiotAPI) GetMatchHistoryByPUUID(puuid string) (MatchHistory, error) {
 
-	url := fmt.Sprintf("%s/lol/match/v5/matches/by-puuid/%s/ids?start=0&count=100", api.baseURL, puuid)
+	url := fmt.Sprintf("%s/lol/match/v5/matches/by-puuid/%s/ids?start=0&count=70", api.baseURL, puuid)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -151,7 +110,7 @@ func (api *RiotAPI) GetMatchHistoryByPUUID(puuid string) (MatchHistory, error) {
 	return matchHistory, nil
 }
 
-func (api *RiotAPI) GetMatchInfo(matchID string) (*MatchInfo, error) {
+func (api *RiotAPI) GetMatchInfo(matchID string) (*models.MatchInfo, error) {
 	url := fmt.Sprintf("%s/lol/match/v5/matches/%s", api.baseURL, matchID)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -172,7 +131,7 @@ func (api *RiotAPI) GetMatchInfo(matchID string) (*MatchInfo, error) {
 		return nil, err
 	}
 
-	var matchInfo MatchInfo
+	var matchInfo models.MatchInfo
 
 	err = json.Unmarshal(body, &matchInfo)
 
@@ -181,4 +140,61 @@ func (api *RiotAPI) GetMatchInfo(matchID string) (*MatchInfo, error) {
 	}
 
 	return &matchInfo, nil
+}
+
+func (api *RiotAPI) GetMatchesInfo(matchIDs []string) ([]*models.MatchInfo, error) {
+	var matchesInfo []*models.MatchInfo
+	for _, matchID := range matchIDs {
+		matchInfo, err := api.GetMatchInfo(matchID)
+		if err != nil {
+			return nil, err
+		}
+		matchesInfo = append(matchesInfo, matchInfo)
+	}
+	return matchesInfo, nil
+}
+
+func PrepareMatch(data models.MatchInfo) (*models.MatchTable, error) {
+
+	matchTable := models.MatchTable{MatchPUUID: data.Metadata.MatchID,
+		WinningTeam: fmt.Sprintf("%t", data.Info.Teams[0].Win),
+		Duration:    int32(data.Info.GameDuration)}
+
+	return &matchTable, nil
+}
+
+func PrepareMatches(data []*models.MatchInfo) (models.MatchTables, error) {
+	var matchTables models.MatchTables
+	for _, matchInfo := range data {
+		matchTable, err := PrepareMatch(*matchInfo)
+		if err != nil {
+			return nil, err
+		}
+		matchTables = append(matchTables, *matchTable)
+	}
+	return matchTables, nil
+}
+
+// GAME_ID -> 10 PLAYERS ID -> GET_PLAYER_INFO -> PREPARE_PLAYER
+
+func PreparePlayerFromMatch(data models.PlayerInfo, matchPuuid string) (*models.TablePlayerInfo, error) {
+	playerInfo := models.TablePlayerInfo{PUUID: data.PUUID,
+		Name:          data.Name,
+		MatchPUUID:    matchPuuid,
+		SummonerLevel: int32(data.SummonerLevel)}
+
+	return &playerInfo, nil
+}
+
+func PreparePlayersFromMatch(data []*models.PlayerInfo, matchPuuid string) (models.TablePlayersInfo, error) {
+	var tablePlayers models.TablePlayersInfo
+	for _, PlayerInfo := range data {
+
+		tablePlayer, err := PreparePlayerFromMatch(*PlayerInfo, matchPuuid)
+		if err != nil {
+			return nil, err
+		}
+		tablePlayers = append(tablePlayers, *tablePlayer)
+	}
+	return tablePlayers, nil
 }
