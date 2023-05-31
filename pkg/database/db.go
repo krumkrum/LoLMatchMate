@@ -139,10 +139,10 @@ func (db *Database) IsMatchPUUIDInPlayerMatches(matchPUUID string) (bool, error)
 
 func (db *Database) ListPlayerStats() ([]models.PlayerStat, error) {
 	rows, err := db.conn.Query(`
-		SELECT Name, COUNT(*), MAX(SummonerLevel) 
-		FROM PlayerMatches 
+		SELECT Name, COUNT(*) as Matches, MAX(SummonerLevel) as MaxSummonerLevel
+		FROM PlayerMatches
 		GROUP BY Name
-		ORDER BY COUNT(*) DESC
+		ORDER BY Matches DESC
 	`)
 	if err != nil {
 		return nil, err
@@ -173,9 +173,9 @@ func (db *Database) PrintPlayerStats() error {
 	}
 
 	rows, err := db.conn.Query(`
-		SELECT Name, COUNT(*) as Matches, SummonerLevel
+		SELECT Name, COUNT(*) as Matches, MAX(SummonerLevel) as MaxSummonerLevel
 		FROM PlayerMatches
-		GROUP BY Name, SummonerLevel
+		GROUP BY Name
 		ORDER BY Matches DESC
 	`)
 	if err != nil {
