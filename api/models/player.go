@@ -10,3 +10,18 @@ type PlayerInfo struct {
 	RevisionDate  int64  `json:"revisionDate"`
 	SummonerLevel int    `json:"summonerLevel"`
 }
+
+type PlayerStat struct {
+	Name             string
+	MatchCount       int
+	MaxSummonerLevel int
+}
+
+type TablePlayerInfo struct {
+	PUUID         string
+	Name          string
+	MatchPUUID    string
+	SummonerLevel int32
+}
+
+type TablePlayersInfo []TablePlayerInfo

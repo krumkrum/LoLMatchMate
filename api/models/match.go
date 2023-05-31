@@ -1,11 +1,14 @@
 package models
 
 // MatchInfo содержит информацию о матче
+
 type MatchTable struct {
 	MatchPUUID  string
 	WinningTeam string
 	Duration    int32
 }
+
+type MatchTables []MatchTable
 
 type MatchInfo struct {
 	Metadata Metadata `json:"metadata"`
@@ -19,21 +22,20 @@ type Metadata struct {
 }
 
 type Info struct {
-	GameCreation       int64    `json:"gameCreation"`
-	GameDuration       int      `json:"gameDuration"`
-	GameEndTimestamp   int64    `json:"gameEndTimestamp"`
-	GameID             int      `json:"gameId"`
-	GameMode           string   `json:"gameMode"`
-	GameName           string   `json:"gameName"`
-	GameStartTimestamp int64    `json:"gameStartTimestamp"`
-	GameType           string   `json:"gameType"`
-	GameVersion        string   `json:"gameVersion"`
-	MapID              int      `json:"mapId"`
-	Participants       []string `json:"participants"`
-	PlatformID         string   `json:"platformId"`
-	QueueID            int      `json:"queueId"`
-	Teams              []Team   `json:"teams"`
-	TournamentCode     string   `json:"tournamentCode"`
+	GameCreation       int64  `json:"gameCreation"`
+	GameDuration       int    `json:"gameDuration"`
+	GameEndTimestamp   int64  `json:"gameEndTimestamp"`
+	GameID             int    `json:"gameId"`
+	GameMode           string `json:"gameMode"`
+	GameName           string `json:"gameName"`
+	GameStartTimestamp int64  `json:"gameStartTimestamp"`
+	GameType           string `json:"gameType"`
+	GameVersion        string `json:"gameVersion"`
+	MapID              int    `json:"mapId"`
+	PlatformID         string `json:"platformId"`
+	QueueID            int    `json:"queueId"`
+	Teams              []Team `json:"teams"`
+	TournamentCode     string `json:"tournamentCode"`
 }
 
 type Team struct {
